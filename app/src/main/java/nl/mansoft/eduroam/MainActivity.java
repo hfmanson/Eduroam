@@ -20,6 +20,7 @@ import java.util.List;
 public class MainActivity extends ActionBarActivity  implements SEService.CallBack{
     private final static String TAG = MainActivity.class.getSimpleName();
     public final static byte[] AID_3GPP = { (byte) 0xA0, 0x00, 0x00, 0x00, (byte) 0x87 };
+    public final static byte[] AID_ISOAPPLET = { (byte) 0xF2, (byte) 0x76, (byte) 0xA2, (byte) 0x88, (byte) 0xBC, (byte) 0xFB, (byte) 0xA6, (byte) 0x9D, (byte) 0x34, (byte) 0xF3, (byte) 0x10, (byte) 0x01 };
     private Button mBtnEduroam;
     private SmartcardIO mSmartcardIO;
 
@@ -31,17 +32,35 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
     private class MyOnClickListener implements View.OnClickListener {
         final String TAG = MyOnClickListener.class.getSimpleName();
 
-        @Override
-        public void onClick(View view) {
-            try {
-                mSmartcardIO.openChannel(AID_3GPP);
-                // select EXT1
-                Telecom telecom = new Telecom(mSmartcardIO);
-                String user = telecom.readData(Telecom.EF_EXT1, Telecom.RECORD_USER);
-                String password = telecom.readData(Telecom.EF_EXT1, Telecom.RECORD_PASSWORD);
+        public void doTelecom() throws IOException {
+            mSmartcardIO.openChannel(AID_3GPP);
+            // select EXT1
+            Telecom telecom = new Telecom(mSmartcardIO);
+            String user = telecom.readData(Telecom.EF_EXT1, Telecom.RECORD_USER);
+            String password = telecom.readData(Telecom.EF_EXT1, Telecom.RECORD_PASSWORD);
+            Log.d(TAG, "user: " + user);
+            //Log.d(TAG, "password: " + password);
+            connectEduroam(user, password);
+        }
+
+        public void doEduroam() throws IOException {
+            mSmartcardIO.openChannel(AID_ISOAPPLET);
+            Eduroam eduroam = new Eduroam(mSmartcardIO);
+            byte data[] = eduroam.readEduroam();
+            if (data != null) {
+                String user = Eduroam.readStringFromByteArray(data, Eduroam.OFFSET_USER);
+                String password = Eduroam.readStringFromByteArray(data, Eduroam.OFFSET_PASSWORD);
                 Log.d(TAG, "user: " + user);
                 //Log.d(TAG, "password: " + password);
                 connectEduroam(user, password);
+            }
+        }
+
+        @Override
+        public void onClick(View view) {
+            try {
+                //doTelecom();
+                doEduroam();
             } catch (IOException e) {
                 e.printStackTrace();
             }

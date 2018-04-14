@@ -22,26 +22,17 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
     public final static byte[] AID_3GPP = { (byte) 0xA0, 0x00, 0x00, 0x00, (byte) 0x87 };
     public final static byte[] AID_ISOAPPLET = { (byte) 0xF2, (byte) 0x76, (byte) 0xA2, (byte) 0x88, (byte) 0xBC, (byte) 0xFB, (byte) 0xA6, (byte) 0x9D, (byte) 0x34, (byte) 0xF3, (byte) 0x10, (byte) 0x01 };
     private Button mBtnEduroam;
+    private Button mBtnTelecom;
     private SmartcardIO mSmartcardIO;
 
     @Override
     public void serviceConnected(SEService seService) {
         mBtnEduroam.setEnabled(true);
+        mBtnTelecom.setEnabled(true);
     }
 
-    private class MyOnClickListener implements View.OnClickListener {
-        final String TAG = MyOnClickListener.class.getSimpleName();
-
-        public void doTelecom() throws IOException {
-            mSmartcardIO.openChannel(AID_3GPP);
-            // select EXT1
-            Telecom telecom = new Telecom(mSmartcardIO);
-            String user = telecom.readData(Telecom.EF_EXT1, Telecom.RECORD_USER);
-            String password = telecom.readData(Telecom.EF_EXT1, Telecom.RECORD_PASSWORD);
-            Log.d(TAG, "user: " + user);
-            //Log.d(TAG, "password: " + password);
-            connectEduroam(user, password);
-        }
+    private class EduroamOnClickListener implements View.OnClickListener {
+        final String TAG = EduroamOnClickListener.class.getSimpleName();
 
         public void doEduroam() throws IOException {
             mSmartcardIO.openChannel(AID_ISOAPPLET);
@@ -59,8 +50,31 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
         @Override
         public void onClick(View view) {
             try {
-                //doTelecom();
                 doEduroam();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private class TelecomOnClickListener implements View.OnClickListener {
+        final String TAG = TelecomOnClickListener.class.getSimpleName();
+
+        public void doTelecom() throws IOException {
+            mSmartcardIO.openChannel(AID_3GPP);
+            // select EXT1
+            Telecom telecom = new Telecom(mSmartcardIO);
+            String user = telecom.readData(Telecom.EF_EXT1, Telecom.RECORD_USER);
+            String password = telecom.readData(Telecom.EF_EXT1, Telecom.RECORD_PASSWORD);
+            Log.d(TAG, "user: " + user);
+            //Log.d(TAG, "password: " + password);
+            connectEduroam(user, password);
+        }
+
+        @Override
+        public void onClick(View view) {
+            try {
+                doTelecom();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -75,7 +89,9 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
             mSmartcardIO = new SmartcardIO();
             mSmartcardIO.setup(this, this);
             mBtnEduroam = (Button) findViewById(R.id.btnEduroam);
-            mBtnEduroam.setOnClickListener(new MyOnClickListener());
+            mBtnEduroam.setOnClickListener(new EduroamOnClickListener());
+            mBtnTelecom = (Button) findViewById(R.id.btnTelecom);
+            mBtnTelecom.setOnClickListener(new TelecomOnClickListener());
         } catch (IOException e) {
             e.printStackTrace();
         }

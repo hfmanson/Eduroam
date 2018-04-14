@@ -16,4 +16,14 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:layout_editor_absoluteX="16dp" />
 
+    <Button
+        android:id="@+id/btnTelecom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/connect_telecom"
+        android:visibility="invisible"
+        app:layout_constraintTop_toBottomOf="@+id/btnEduroam"
+        tools:layout_editor_absoluteX="21dp" />
+
 </android.support.constraint.ConstraintLayout>

@@ -5,14 +5,17 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiEnterpriseConfig;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import org.simalliance.openmobileapi.SEService;
+import org.simalliance.openmobileapi.util.ResponseApdu;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,35 +26,46 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
     public final static byte[] AID_ISOAPPLET = { (byte) 0xF2, (byte) 0x76, (byte) 0xA2, (byte) 0x88, (byte) 0xBC, (byte) 0xFB, (byte) 0xA6, (byte) 0x9D, (byte) 0x34, (byte) 0xF3, (byte) 0x10, (byte) 0x01 };
     private Button mBtnEduroam;
     private Button mBtnTelecom;
+    private TextView mTextView;
     private SmartcardIO mSmartcardIO;
 
     @Override
     public void serviceConnected(SEService seService) {
-        mBtnEduroam.setEnabled(true);
-        mBtnTelecom.setEnabled(true);
+        try {
+            mSmartcardIO.setSession();
+            mBtnEduroam.setEnabled(true);
+            mBtnTelecom.setEnabled(true);
+        } catch (IOException e) {
+            mTextView.setText("Error: " + e.getMessage());
+        }
     }
 
     private class EduroamOnClickListener implements View.OnClickListener {
         final String TAG = EduroamOnClickListener.class.getSimpleName();
 
-        public void doEduroam() throws IOException {
+        public void doEduroam() throws Exception {
             mSmartcardIO.openChannel(AID_ISOAPPLET);
             Eduroam eduroam = new Eduroam(mSmartcardIO);
-            byte data[] = eduroam.readEduroam();
-            if (data != null) {
+            ResponseApdu responseApdu = eduroam.readEduroam();
+            if (responseApdu.isSuccess()) {
+                byte data[] = responseApdu.getData();
                 String user = Eduroam.readStringFromByteArray(data, Eduroam.OFFSET_USER);
                 String password = Eduroam.readStringFromByteArray(data, Eduroam.OFFSET_PASSWORD);
                 Log.d(TAG, "user: " + user);
                 //Log.d(TAG, "password: " + password);
                 connectEduroam(user, password);
+            } else {
+                mTextView.setText("Credentials not found on SIM card");
             }
+            mSmartcardIO.closeChannel();
         }
 
         @Override
         public void onClick(View view) {
             try {
                 doEduroam();
-            } catch (IOException e) {
+            } catch (Exception e) {
+                mTextView.setText("Error: " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -60,7 +74,7 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
     private class TelecomOnClickListener implements View.OnClickListener {
         final String TAG = TelecomOnClickListener.class.getSimpleName();
 
-        public void doTelecom() throws IOException {
+        public void doTelecom() throws Exception {
             mSmartcardIO.openChannel(AID_3GPP);
             // select EXT1
             Telecom telecom = new Telecom(mSmartcardIO);
@@ -75,7 +89,7 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
         public void onClick(View view) {
             try {
                 doTelecom();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -92,9 +106,16 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
             mBtnEduroam.setOnClickListener(new EduroamOnClickListener());
             mBtnTelecom = (Button) findViewById(R.id.btnTelecom);
             mBtnTelecom.setOnClickListener(new TelecomOnClickListener());
+            mTextView = (TextView) findViewById(R.id.textView);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        mSmartcardIO.teardown();
+        super.onDestroy();
     }
 
     @Override
@@ -146,6 +167,7 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
         wifiEnterpriseConfig.setPassword(password);
         wifiConfiguration.enterpriseConfig = wifiEnterpriseConfig;
         int netId = wm.addNetwork(wifiConfiguration);
+        // Connect to eduroam
         wm.enableNetwork(netId, true);
     }
 }

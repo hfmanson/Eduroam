@@ -4,7 +4,7 @@ android {
     compileSdkVersion 'Giesecke Devrient GmbH:Open Mobile API:21'
     defaultConfig {
         applicationId "nl.mansoft.eduroam"
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 21
         versionCode 1
         versionName "1.0"

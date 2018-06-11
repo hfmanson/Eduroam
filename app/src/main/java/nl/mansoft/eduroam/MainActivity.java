@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import org.simalliance.openmobileapi.SEService;
@@ -28,6 +29,7 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
     private Button mBtnTelecom;
     private TextView mTextView;
     private SmartcardIO mSmartcardIO;
+    private EditText mEditText;
 
     @Override
     public void serviceConnected(SEService seService) {
@@ -46,16 +48,28 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
         public void doEduroam() throws Exception {
             mSmartcardIO.openChannel(AID_ISOAPPLET);
             Eduroam eduroam = new Eduroam(mSmartcardIO);
-            ResponseApdu responseApdu = eduroam.readEduroam();
+            String pin = mEditText.getText().toString();
+            ResponseApdu responseApdu = null;
+            if (!pin.isEmpty()) {
+                responseApdu = eduroam.login(pin.getBytes());
+            }
+            if (responseApdu == null || responseApdu.isSuccess()) {
+                responseApdu = eduroam.readEduroam();
+            }
+            int sw = responseApdu.getSwValue();
             if (responseApdu.isSuccess()) {
                 byte data[] = responseApdu.getData();
                 String user = Eduroam.readStringFromByteArray(data, Eduroam.OFFSET_USER);
                 String password = Eduroam.readStringFromByteArray(data, Eduroam.OFFSET_PASSWORD);
                 Log.d(TAG, "user: " + user);
                 //Log.d(TAG, "password: " + password);
+                mTextView.setText(pin.isEmpty() ?  "" : "PIN accepted");
                 connectEduroam(user, password);
-            } else {
-                mTextView.setText("Credentials not found on SIM card");
+            } else if (sw == 0x6982) { // Security status not satisfied
+                //loge("No credentials found on SIM card");
+                mTextView.setText("PIN required!");
+            } else if ((sw & 0xFFF0) == 0x63C0) {
+                mTextView.setText("Wrong PIN, " + (sw & 0x000F) + " attempts left!");
             }
             mSmartcardIO.closeChannel();
         }
@@ -102,6 +116,7 @@ public class MainActivity extends ActionBarActivity  implements SEService.CallBa
         try {
             mSmartcardIO = new SmartcardIO();
             mSmartcardIO.setup(this, this);
+            mEditText = (EditText) findViewById(R.id.edtPin);
             mBtnEduroam = (Button) findViewById(R.id.btnEduroam);
             mBtnEduroam.setOnClickListener(new EduroamOnClickListener());
             mBtnTelecom = (Button) findViewById(R.id.btnTelecom);

@@ -17,6 +17,10 @@ public class Eduroam {
         mSmartcardIO = smartcardIO;
     }
 
+    public ResponseApdu login(byte password[]) throws Exception {
+        return mSmartcardIO.login(password);
+    }
+
     public ResponseApdu selectEduroam() throws IOException {
         CommandApdu c = new CommandApdu((byte)0x00, (byte)0xA4, (byte)0x00, (byte)0x00, new byte[] { 0x10, 0x00 });
         return mSmartcardIO.runAPDU(c);
@@ -24,7 +28,7 @@ public class Eduroam {
 
     public ResponseApdu readEduroam() throws IOException {
         ResponseApdu result = selectEduroam();
-        if (selectEduroam().isSuccess()) {
+        if (result.isSuccess()) {
             Log.d(TAG, "reading eduroam");
             CommandApdu c = new CommandApdu((byte)0x00, (byte)0xB0, (byte)0x00, (byte)0x00);
             result = mSmartcardIO.runAPDU(c);

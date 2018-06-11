@@ -55,6 +55,10 @@ public class SmartcardIO {
         cardChannel = session.openLogicalChannel(aid);
     }
 
+    public ResponseApdu login(byte[] password) throws Exception {
+        return runAPDU(new CommandApdu((byte)0x00, (byte)0x20, (byte)0x00, (byte)0x01, password));
+    }
+
     public static String hex2(int hex) {
         return String.format("%02X", hex & 0xff);
     }

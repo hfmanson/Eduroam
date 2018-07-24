@@ -2,8 +2,8 @@ package nl.mansoft.eduroam;
 
 import android.util.Log;
 
-import org.simalliance.openmobileapi.util.CommandApdu;
-import org.simalliance.openmobileapi.util.ResponseApdu;
+import nl.mansoft.openmobileapi.util.CommandApdu;
+import nl.mansoft.openmobileapi.util.ResponseApdu;
 
 import java.io.IOException;
 

@@ -16,7 +16,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.simalliance.openmobileapi.SEService;
-import org.simalliance.openmobileapi.util.ResponseApdu;
+import nl.mansoft.openmobileapi.util.ResponseApdu;
 
 import java.io.IOException;
 import java.util.List;
